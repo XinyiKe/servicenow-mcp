@@ -5,6 +5,7 @@ WORKDIR /app
 # Copy project files
 COPY pyproject.toml README.md LICENSE ./
 COPY src/ ./src/
+COPY config/tool_packages.yaml /app/config/tool_packages.yaml
 
 # Install the package in development mode
 RUN pip install -e .

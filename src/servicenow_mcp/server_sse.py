@@ -19,6 +19,8 @@ from starlette.routing import Mount, Route
 
 from servicenow_mcp.server import ServiceNowMCP
 from servicenow_mcp.utils.config import AuthConfig, AuthType, BasicAuthConfig, ServerConfig
+import logging
+import traceback
 
 
 def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlette:
@@ -26,16 +28,20 @@ def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlett
     sse = SseServerTransport("/messages/")
 
     async def handle_sse(request: Request) -> None:
-        async with sse.connect_sse(
-            request.scope,
-            request.receive,
-            request._send,  # noqa: SLF001
-        ) as (read_stream, write_stream):
-            await mcp_server.run(
-                read_stream,
-                write_stream,
-                mcp_server.create_initialization_options(),
+        try:
+            async with sse.connect_sse(
+                request.scope,
+                request.receive,
+                request._send,  # noqa: SLF001
+            ) as (read_stream, write_stream):
+                await mcp_server.run(
+                    read_stream,
+                    write_stream,
+                    mcp_server.create_initialization_options(),
             )
+        except Exception as e:
+            logging.error("Exception in handle_sse:\n%s", traceback.format_exc())
+            raise
 
     return Starlette(
         debug=debug,
