@@ -16,6 +16,16 @@ from servicenow_mcp.utils.config import ServerConfig
 logger = logging.getLogger(__name__)
 
 
+class ListCatalogParams(BaseModel):
+    """Parameters for listing service catalog."""
+    
+    limit: int = Field(10, description="Maximum number of catalog to return")
+    offset: int = Field(0, description="Offset for pagination")
+    category: Optional[str] = Field(None, description="Filter by category")
+    query: Optional[str] = Field(None, description="Search query for catalog items")
+    active: bool = Field(True, description="Whether to only return active catalog items")
+
+
 class ListCatalogItemsParams(BaseModel):
     """Parameters for listing service catalog items."""
     
@@ -77,6 +87,81 @@ class MoveCatalogItemsParams(BaseModel):
     
     item_ids: List[str] = Field(..., description="List of catalog item IDs to move")
     target_category_id: str = Field(..., description="Target category ID to move items to")
+
+
+def list_catalog(
+    config: ServerConfig,
+    auth_manager: AuthManager,
+    params: ListCatalogParams,
+) -> Dict[str, Any]:
+    """
+    List service catalogs from ServiceNow.
+
+    Args:
+        config: Server configuration
+        auth_manager: Authentication manager
+        params: Parameters for listing catalogs
+
+    Returns:
+        Dictionary containing catalogs and metadata
+    """
+    logger.info("Listing service catalog items")
+    
+    # Build the API URL
+    url = f"{config.instance_url}/api/now/table/sc_catalog"
+    
+    # Prepare query parameters
+    query_params = {
+        "sysparm_limit": params.limit,
+        "sysparm_offset": params.offset,
+    }
+    
+
+    
+    # Make the API request
+    headers = auth_manager.get_headers()
+    headers["Accept"] = "application/json"
+    
+    try:
+        response = requests.get(url, headers=headers, params=query_params)
+        response.raise_for_status()
+        
+        # Process the response
+        result = response.json()
+        items = result.get("result", [])
+        
+        # Format the response
+        formatted_items = []
+        for item in items:
+            formatted_items.append({
+                "sys_id": item.get("sys_id", ""),
+                "title": item.get("title", ""),
+                "description": item.get("description", ""),
+                "u_keywords": item.get("u_keywords", ""),
+                "sys_name": item.get("sys_name", ""),
+                "active": item.get("active", ""),
+            })
+        
+        return {
+            "success": True,
+            "message": f"Retrieved {len(formatted_items)} catalog items",
+            "items": formatted_items,
+            "total": len(formatted_items),
+            "limit": params.limit,
+            "offset": params.offset,
+        }
+    
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Error listing catalog items: {str(e)}")
+        return {
+            "success": False,
+            "message": f"Error listing catalog items: {str(e)}",
+            "items": [],
+            "total": 0,
+            "limit": params.limit,
+            "offset": params.offset,
+        }
+
 
 
 def list_catalog_items(

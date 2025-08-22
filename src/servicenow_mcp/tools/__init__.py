@@ -8,6 +8,7 @@ from servicenow_mcp.tools.catalog_optimization import (
     update_catalog_item,
 )
 from servicenow_mcp.tools.catalog_tools import (
+    list_catalog,
     create_catalog_category,
     get_catalog_item,
     list_catalog_categories,
@@ -124,6 +125,7 @@ __all__ = [
     "list_incidents",
     
     # Catalog tools
+    "list_catalog",
     "list_catalog_items",
     "get_catalog_item",
     "list_catalog_categories",

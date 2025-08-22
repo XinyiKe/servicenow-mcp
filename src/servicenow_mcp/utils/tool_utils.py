@@ -13,12 +13,16 @@ from servicenow_mcp.tools.catalog_optimization import (
     update_catalog_item as update_catalog_item_tool,
 )
 from servicenow_mcp.tools.catalog_tools import (
+    ListCatalogParams,
     CreateCatalogCategoryParams,
     GetCatalogItemParams,
     ListCatalogCategoriesParams,
     ListCatalogItemsParams,
     MoveCatalogItemsParams,
     UpdateCatalogCategoryParams,
+)
+from servicenow_mcp.tools.catalog_tools import (
+    list_catalog as list_catalog_tool,
 )
 from servicenow_mcp.tools.catalog_tools import (
     create_catalog_category as create_catalog_category_tool,
@@ -397,6 +401,14 @@ def get_tool_definitions(
             "json",  # Tool returns list/dict, needs JSON dump
         ),
         # Catalog Tools
+        "list_catalog": (
+            list_catalog_tool,
+            ListCatalogParams,
+            str,  # Expects JSON string
+            "List service catalog from ServiceNow",
+            "json",  # Tool returns list/dict, needs JSON dump
+        ),
+
         "list_catalog_items": (
             list_catalog_items_tool,
             ListCatalogItemsParams,
