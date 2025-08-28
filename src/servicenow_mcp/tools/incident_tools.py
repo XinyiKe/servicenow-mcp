@@ -94,7 +94,7 @@ class IncidentResponse(BaseModel):
 
 def create_incident(
     config: ServerConfig,
-    auth_manager: AuthManager,
+    headers: dict,
     params: CreateIncidentParams,
 ) -> IncidentResponse:
     """
@@ -139,7 +139,7 @@ def create_incident(
         response = requests.post(
             api_url,
             json=data,
-            headers=auth_manager.get_headers(),
+            headers=headers,
             timeout=config.timeout,
         )
         response.raise_for_status()
@@ -458,7 +458,7 @@ def resolve_incident(
 
 def list_incidents(
     config: ServerConfig,
-    auth_manager: AuthManager,
+    headers: dict,
     params: ListIncidentsParams,
 ) -> dict:
     """
@@ -472,6 +472,7 @@ def list_incidents(
     Returns:
         Dictionary with list of incidents.
     """
+    print(f"DEBUG headers in list_incidents: {headers}")
     api_url = f"{config.api_url}/table/incident"
 
     # Build query parameters
@@ -496,12 +497,11 @@ def list_incidents(
     if filters:
         query_params["sysparm_query"] = "^".join(filters)
     
-    # Make request
     try:
         response = requests.get(
             api_url,
             params=query_params,
-            headers=auth_manager.get_headers(),
+            headers=headers,
             timeout=config.timeout,
         )
         response.raise_for_status()
@@ -547,7 +547,7 @@ def list_incidents(
 
 def get_incident_by_number(
     config: ServerConfig,
-    auth_manager: AuthManager,
+    headers: dict,
     params: GetIncidentByNumberParams,
 ) -> dict:
     """
@@ -576,7 +576,7 @@ def get_incident_by_number(
         response = requests.get(
             api_url,
             params=query_params,
-            headers=auth_manager.get_headers(),
+            headers=headers,
             timeout=config.timeout,
         )
         response.raise_for_status()

@@ -20,7 +20,7 @@ from starlette.responses import Response
 
 
 from servicenow_mcp.server import ServiceNowMCP
-from servicenow_mcp.utils.config import AuthConfig, AuthType, BasicAuthConfig, ServerConfig
+from servicenow_mcp.utils.config import ServerConfig
 import logging
 import traceback
 
@@ -36,10 +36,24 @@ def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlett
                 request.receive,
                 request._send,  # noqa: SLF001
             ) as (read_stream, write_stream):
+
+                # Create initialization options (Pydantic model)
+                init_options = mcp_server.create_initialization_options()
+
+                # Access metadata via attribute, not .get()
+                metadata = getattr(init_options, "metadata", None)
+                if metadata:
+                    username = getattr(metadata, "username", None)
+                    password = getattr(metadata, "password", None)
+
+                    if username and password and hasattr(mcp_server, "set_auth"):
+                        mcp_server.set_auth(username, password)
+
+                # Run the server
                 await mcp_server.run(
                     read_stream,
                     write_stream,
-                    mcp_server.create_initialization_options(),
+                    init_options
                 )
         except Exception as e:
             logging.error("Exception in handle_sse:\n%s", traceback.format_exc())
@@ -91,44 +105,17 @@ class ServiceNowSSEMCP(ServiceNowMCP):
         uvicorn.run(starlette_app, host=host, port=port)
 
 
-def create_servicenow_mcp(instance_url: str, username: str, password: str):
-    """
-    Create a ServiceNow MCP server with minimal configuration.
-
-    This is a simplified factory function that creates a pre-configured
-    ServiceNow MCP server with basic authentication.
-
-    Args:
-        instance_url: ServiceNow instance URL
-        username: ServiceNow username
-        password: ServiceNow password
-
-    Returns:
-        A configured ServiceNowMCP instance ready to use
-
-    Example:
-        ```python
-        from servicenow_mcp.server import create_servicenow_mcp
-
-        # Create an MCP server for ServiceNow
-        mcp = create_servicenow_mcp(
-            instance_url="https://instance.service-now.com",
-            username="admin",
-            password="password"
-        )
-
-        # Start the server
-        mcp.start()
-        ```
-    """
+#def create_servicenow_mcp(instance_url: str, username: str, password: str):
+def create_servicenow_mcp(instance_url: str):
 
     # Create basic auth config
-    auth_config = AuthConfig(
-        type=AuthType.BASIC, basic=BasicAuthConfig(username=username, password=password)
-    )
+    #auth_config = AuthConfig(
+    #    type=AuthType.BASIC, basic=BasicAuthConfig(username=username, password=password)
+    #)
 
     # Create server config
-    config = ServerConfig(instance_url=instance_url, auth=auth_config)
+    #config = ServerConfig(instance_url=instance_url, auth=auth_config)
+    config = ServerConfig(instance_url=instance_url)
 
     # Create and return server
     return ServiceNowSSEMCP(config)
@@ -144,9 +131,7 @@ def main():
     args = parser.parse_args()
 
     server = create_servicenow_mcp(
-        instance_url=os.getenv("SERVICENOW_INSTANCE_URL"),
-        username=os.getenv("SERVICENOW_USERNAME"),
-        password=os.getenv("SERVICENOW_PASSWORD"),
+        instance_url=os.getenv("SERVICENOW_INSTANCE_URL")
     )
     server.start(host=args.host, port=args.port)
 

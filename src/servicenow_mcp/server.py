@@ -8,11 +8,13 @@ import json
 import logging
 import os
 from typing import Any, Dict, List, Union
-
+import requests
+from requests.auth import HTTPBasicAuth
 import mcp.types as types
 import yaml
 from mcp.server.lowlevel import Server
 from pydantic import ValidationError
+
 
 from servicenow_mcp.auth.auth_manager import AuthManager
 from servicenow_mcp.tools.knowledge_base import (
@@ -30,7 +32,6 @@ logger = logging.getLogger(__name__)
 
 # Define path for the configuration file
 TOOL_PACKAGE_CONFIG_PATH = os.getenv("TOOL_PACKAGE_CONFIG_PATH", "config/tool_packages.yaml")
-
 
 def serialize_tool_output(result: Any, tool_name: str) -> str:
     """Serializes tool output to a string, preferably JSON indented."""
@@ -95,8 +96,14 @@ class ServiceNowMCP:
         else:
             self.config = config
 
-        self.auth_manager = AuthManager(self.config.auth, self.config.instance_url)
-        self.mcp_server = Server("ServiceNow")  # Use low-level Server
+        #self.auth_manager = AuthManager(self.config.auth, self.config.instance_url)
+        self.session = requests.Session()
+        self.session.headers.update({
+            "Accept": "application/json",
+            "Content-Type": "application/json"
+        })
+        self.auth_manager = None
+        self.mcp_server = Server("ServiceNow")  
         self.name = "ServiceNow"
 
         self.package_definitions: Dict[str, List[str]] = {}
@@ -111,6 +118,7 @@ class ServiceNowMCP:
         )
 
         self._register_handlers()
+
 
     def _register_handlers(self):
         """Register the list_tools and call_tool handlers."""
@@ -274,7 +282,8 @@ class ServiceNowMCP:
 
         # Execute the tool implementation function
         try:
-            result = impl_func(self.config, self.auth_manager, params)
+            headers = arguments.pop("headers", {})  
+            result = impl_func(self.config, headers, params)
             logger.debug(f"Raw result type from tool '{name}': {type(result)}")
         except Exception as e:
             logger.error(f"Error executing tool '{name}': {e}", exc_info=True)

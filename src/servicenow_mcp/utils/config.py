@@ -53,7 +53,7 @@ class ServerConfig(BaseModel):
     """Server configuration."""
 
     instance_url: str
-    auth: AuthConfig
+    auth: Optional[AuthConfig] = None
     debug: bool = False
     timeout: int = 30
 

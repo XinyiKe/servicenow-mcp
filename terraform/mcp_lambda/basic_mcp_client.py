@@ -40,10 +40,22 @@ class BasicMCPClient:
     async def call_tool(self, tool_name: str, args: dict):
         print(f"\n Calling tool '{tool_name}' with args: {json.dumps(args)}")
         result = await self.session.call_tool(tool_name, args)
-        print(f"Result:\n{result.content}")
+        if isinstance(result.content, list):
+            texts = [c.text for c in result.content if hasattr(c, "text")]
+            combined = "\n".join(texts)
+        elif hasattr(result.content, "text"):
+            combined = result.content.text
+        else:
+            combined = str(result.content)
+
+        parsed = json.loads(combined)
+        final_result = json.dumps(parsed, indent=2)
+        return final_result
+
+
 
     async def chat_loop(self):
-        print("\n🛠 MCP Client Started")
+        print("MCP Client Started")
         tools = await self.list_tools()
         tool_map = {tool.name: tool for tool in tools}
 
