@@ -40,16 +40,7 @@ def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlett
                 # Create initialization options (Pydantic model)
                 init_options = mcp_server.create_initialization_options()
 
-                # Access metadata via attribute, not .get()
-                metadata = getattr(init_options, "metadata", None)
-                if metadata:
-                    username = getattr(metadata, "username", None)
-                    password = getattr(metadata, "password", None)
-
-                    if username and password and hasattr(mcp_server, "set_auth"):
-                        mcp_server.set_auth(username, password)
-
-                # Run the server
+            # Run the server
                 await mcp_server.run(
                     read_stream,
                     write_stream,

@@ -9,7 +9,6 @@ import logging
 import os
 from typing import Any, Dict, List, Union
 import requests
-from requests.auth import HTTPBasicAuth
 import mcp.types as types
 import yaml
 from mcp.server.lowlevel import Server
